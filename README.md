@@ -19,7 +19,7 @@ A Pomodoro timer built with **React** and styled using **Bootstrap**. This app a
 
 ## 🚀 Live Demo
 
-[Click here to try it out on GitHub Pages](https://your-username.github.io/pomodoro-timer)
+[Click here to try it out on GitHub Pages](https://egidee.github.io/pomodoro-timer-/)
 
 
 
