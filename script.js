@@ -12,24 +12,42 @@ const App = () => {
 
   const intervalRef = useRef(null);
   const audioRef = useRef(null);
+  const endTimeRef = useRef(null); // real-world timestamp when current phase should end
 
   useEffect(() => {
     if (!isRunning) return;
+
+    // Set the real "end time" the moment we start/resume
+    endTimeRef.current = Date.now() + timeLeft * 1000;
+
     intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev > 0) return prev - 1;
-        if (audioRef.current) audioRef.current.play();
-        setBreaking(prevBreaking => !prevBreaking);
-        return breaking ? sessionLength * 60 : breakLength * 60;
-      });
+      const secondsLeft = Math.round((endTimeRef.current - Date.now()) / 1000);
+
+      if (secondsLeft > 0) {
+        setTimeLeft(secondsLeft);
+      } else {
+        // Phase finished — play sound and switch session/break
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play();
+        }
+        setBreaking(prevBreaking => {
+          const nowBreaking = !prevBreaking;
+          const nextDuration = nowBreaking ? breakLength * 60 : sessionLength * 60;
+          endTimeRef.current = Date.now() + nextDuration * 1000;
+          setTimeLeft(nextDuration);
+          return nowBreaking;
+        });
+      }
     }, 1000);
+
     return () => clearInterval(intervalRef.current);
-  }, [isRunning, breaking, breakLength, sessionLength]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning]);
 
   const display = seconds => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
@@ -40,6 +58,7 @@ const App = () => {
     setBreakLength(defaultBreak);
     setSessionLength(defaultSession);
     setTimeLeft(defaultSession * 60);
+    endTimeRef.current = null;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
